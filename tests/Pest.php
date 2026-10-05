@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +48,27 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function adminUser(): User
 {
-    // ..
+    test()->seed(RolePermissionSeeder::class);
+
+    $user = User::factory()->create();
+    $user->assignRole('admin');
+
+    return $user->fresh(['roles.permissions']);
+}
+
+function userWithPermissions(string ...$permissions): User
+{
+    test()->seed(RolePermissionSeeder::class);
+
+    $role = Role::factory()->create();
+    $role->permissions()->sync(
+        Permission::query()->whereIn('slug', $permissions)->pluck('id'),
+    );
+
+    $user = User::factory()->create();
+    $user->assignRole($role);
+
+    return $user->fresh(['roles.permissions']);
 }

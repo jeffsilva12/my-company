@@ -19,6 +19,11 @@ export type SolicitationDetail = SolicitationListItem & {
     description: string;
     user_id: number;
     is_owner: boolean;
+    can: {
+        update: boolean;
+        delete: boolean;
+        update_status: boolean;
+    };
 };
 
 export type SolicitationFilters = {
@@ -30,7 +35,7 @@ export type SolicitationFilters = {
 };
 
 export type PaginatedSolicitations = {
-    data: SolicitationListItem[];
+    data: SolicitationDetail[];
     current_page: number;
     last_page: number;
     per_page: number;

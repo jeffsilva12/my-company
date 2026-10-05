@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AppSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\View;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -35,11 +37,23 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $branding = AppSetting::current()->toBrandingArray();
+        $user = $request->user();
+
+        if ($user !== null) {
+            $user->loadMissing(['roles.permissions']);
+        }
+
+        View::share('branding', $branding);
+
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => $branding['title'],
+            'branding' => $branding,
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
+                'permissions' => $user?->permissionSlugs()->values()->all() ?? [],
+                'roles' => $user?->roles->pluck('slug')->values()->all() ?? [],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

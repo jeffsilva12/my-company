@@ -19,7 +19,10 @@ export function SolicitationStatusBadge({
     return (
         <Badge
             variant="outline"
-            className={cn(statusStyles[status] ?? '')}
+            className={cn(
+                'rounded-full px-2.5 py-0.5 font-medium',
+                statusStyles[status] ?? '',
+            )}
         >
             {label}
         </Badge>

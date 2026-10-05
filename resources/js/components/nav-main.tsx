@@ -14,22 +14,41 @@ export function NavMain({ items }: { items: NavItem[] }) {
 
     return (
         <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel>Menu</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sidebar-foreground/55">
+                Navegação
+            </SidebarGroupLabel>
             <SidebarMenu>
-                {items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={isCurrentUrl(item.href)}
-                            tooltip={{ children: item.title }}
-                        >
-                            <Link href={item.href} prefetch>
-                                {item.icon && <item.icon />}
-                                <span>{item.title}</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
+                {items.map((item) => {
+                    const active = isCurrentUrl(item.href);
+
+                    return (
+                        <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton
+                                asChild
+                                isActive={active}
+                                tooltip={{ children: item.title }}
+                                className={
+                                    active
+                                        ? 'bg-linear-to-r from-teal-400/25 to-cyan-400/10 text-sidebar-foreground shadow-sm ring-1 ring-teal-300/25 data-[active=true]:bg-linear-to-r data-[active=true]:from-teal-400/25 data-[active=true]:to-cyan-400/10'
+                                        : 'hover:bg-sidebar-accent/80'
+                                }
+                            >
+                                <Link href={item.href} prefetch>
+                                    {item.icon && (
+                                        <item.icon
+                                            className={
+                                                active
+                                                    ? 'text-teal-300'
+                                                    : 'text-sidebar-foreground/75'
+                                            }
+                                        />
+                                    )}
+                                    <span>{item.title}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    );
+                })}
             </SidebarMenu>
         </SidebarGroup>
     );

@@ -1,3 +1,4 @@
+import { BrandingSync } from '@/components/branding-sync';
 import AuthLayoutTemplate from '@/layouts/auth/auth-simple-layout';
 
 export default function AuthLayout({
@@ -10,8 +11,11 @@ export default function AuthLayout({
     children: React.ReactNode;
 }) {
     return (
-        <AuthLayoutTemplate title={title} description={description}>
-            {children}
-        </AuthLayoutTemplate>
+        <>
+            <BrandingSync />
+            <AuthLayoutTemplate title={title} description={description}>
+                {children}
+            </AuthLayoutTemplate>
+        </>
     );
 }
