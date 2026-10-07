@@ -232,6 +232,11 @@ npm run build
 
 MIT (base Laravel React Starter Kit).
 
+## Deployment
+
+Foi utilizado a plataforma do oracle cloud para hospedar a aplicação e o banco de dados MySQL
+Disponível em: http://my-company.onefast.site/login
+
 ## Memorial Técnico
 
 [MEMORIAL_TECNICO.md](docs/MEMORIAL_TECNICO.md)
