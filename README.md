@@ -234,7 +234,7 @@ MIT (base Laravel React Starter Kit).
 
 ## Deployment
 
-Foi utilizado a plataforma do oracle cloud para hospedar a aplicação e o banco de dados MySQL
+Foi utilizada a plataforma do oracle cloud para hospedar a aplicação e o banco de dados MySQL a partir de conexão SSH para manipulação do ambiente via terminal.
 Disponível em: http://my-company.onefast.site/login
 
 ## Memorial Técnico
