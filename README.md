@@ -45,14 +45,72 @@ Documentação técnica detalhada: [docs/MEMORIAL_TECNICO.md](docs/MEMORIAL_TECN
 
 ## Requisitos
 
-- PHP 8.4+
-- Composer 2
-- Node.js 22.12+ (recomendado; versões próximas podem exigir binding nativo do Rolldown)
-- npm
-- Banco configurado no `.env` (SQLite, MySQL ou PostgreSQL)
-- Ambiente local sugerido: [Laravel Herd](https://herd.laravel.com/)
+Escolha **uma** forma de subir o projeto:
 
-## Instalação
+| Opção | Precisa instalar |
+|-------|------------------|
+| **Docker (recomendado para o time)** | [Docker Desktop](https://www.docker.com/products/docker-desktop/) |
+| Local (Herd / PHP nativo) | PHP 8.4+, Composer 2, Node.js 22.12+, npm |
+
+## Instalação com Docker (recomendado)
+
+Sobe app (PHP/Nginx), MySQL e Mailpit (e-mails de teste) com um comando.
+
+```bash
+# Na raiz do projeto
+docker compose --env-file .env.docker up -d --build
+```
+
+Ou, se tiver `make`:
+
+```bash
+make up
+```
+
+Na primeira subida o container:
+
+1. Instala `composer` / `npm` (se necessário)
+2. Gera `APP_KEY`
+3. Roda `migrate` + `db:seed`
+4. Faz `npm run build`
+
+### URLs
+
+| Serviço | URL |
+|---------|-----|
+| Aplicação | http://localhost:8080 |
+| Mailpit (ver e-mails) | http://localhost:8025 |
+| MySQL | `localhost:3306` (user `mycompany` / senha `secret`) |
+
+Login demo após o seed: `test@example.com` / `password`
+
+### Comandos úteis (Docker)
+
+```bash
+# Logs do app
+docker compose --env-file .env.docker logs -f app
+
+# Shell no container
+docker compose --env-file .env.docker exec app bash
+
+# Artisan
+docker compose --env-file .env.docker exec app php artisan migrate
+docker compose --env-file .env.docker exec app php artisan test --compact
+
+# Rebuild de assets
+docker compose --env-file .env.docker exec app npm run build
+
+# Parar
+docker compose --env-file .env.docker down
+```
+
+Equivalentes com Make: `make logs`, `make shell`, `make migrate`, `make test`, `make down`.
+
+Configuração Docker: `.env.docker`, `docker-compose.yml`, `docker/`.
+
+> E-mails de verificação/redefinição aparecem no **Mailpit** (`http://localhost:8025`), sem precisar de SMTP externo.
+
+## Instalação local (Herd / PHP nativo)
 
 ```bash
 # Dependências PHP
@@ -194,6 +252,9 @@ routes/
   web.php                        # Páginas + admin
   api.php                        # API v1
   settings.php                   # Perfil, segurança, aparência, branding
+docker/                          # Imagem PHP/Nginx + entrypoint
+docker-compose.yml               # app + mysql + mailpit
+.env.docker                      # Env pronto para Docker
 tests/Feature/                   # Pest (API, admin, branding, páginas)
 docs/
   MEMORIAL_TECNICO.md
@@ -202,8 +263,11 @@ docs/
 ## Scripts úteis
 
 ```bash
-# Testes
+# Testes (local)
 php artisan test --compact
+
+# Testes (Docker)
+make test
 
 # Formatação PHP
 vendor/bin/pint

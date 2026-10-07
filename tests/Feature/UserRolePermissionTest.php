@@ -4,12 +4,16 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
     $this->seed(RolePermissionSeeder::class);
 });
 
 test('admin can manage users and assign roles', function () {
+    Notification::fake();
+
     $admin = adminUser();
     $role = Role::query()->where('slug', 'solicitante')->firstOrFail();
 
@@ -26,8 +30,11 @@ test('admin can manage users and assign roles', function () {
     $user = User::query()->where('email', 'maria@example.com')->first();
 
     expect($user)->not->toBeNull()
+        ->and($user->email_verified_at)->toBeNull()
         ->and($user->hasRole('solicitante'))->toBeTrue()
         ->and($user->hasPermission('solicitations.create'))->toBeTrue();
+
+    Notification::assertSentTo($user, VerifyEmail::class);
 });
 
 test('users without permission cannot access user admin', function () {

@@ -15,6 +15,7 @@
 .env
 .env.backup
 .env.production
+# .env.docker fica versionado como template local do Docker
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
