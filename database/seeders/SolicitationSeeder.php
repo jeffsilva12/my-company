@@ -21,6 +21,10 @@ class SolicitationSeeder extends Seeder
                 'email' => 'test@example.com',
             ]);
 
+        if (Solicitation::query()->where('user_id', $user->id)->exists()) {
+            return;
+        }
+
         foreach (SolicitationCategory::cases() as $category) {
             Solicitation::factory()->open()->create([
                 'user_id' => $user->id,

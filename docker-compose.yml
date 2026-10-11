@@ -1,3 +1,5 @@
+name: my-company
+
 services:
   app:
     build:
@@ -46,6 +48,12 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 240s
     networks:
       - my-company
 

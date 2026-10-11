@@ -54,25 +54,27 @@ Escolha **uma** forma de subir o projeto:
 
 ## Instalação com Docker (recomendado)
 
-Sobe app (PHP/Nginx), MySQL e Mailpit (e-mails de teste) com um comando.
+Um comando sobe tudo: app (PHP/Nginx), MySQL, Mailpit, dependências, migrations, seed e build do frontend.
 
-```bash
-# Na raiz do projeto
-docker compose --env-file .env.docker up -d --build
+**Windows (PowerShell), na raiz do projeto:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File docker\start.ps1
 ```
 
-Ou, se tiver `make`:
+**Linux / macOS / WSL:**
+
+```bash
+bash docker/start.sh
+```
+
+**Ou com Make:**
 
 ```bash
 make up
 ```
 
-Na primeira subida o container:
-
-1. Instala `composer` / `npm` (se necessário)
-2. Gera `APP_KEY`
-3. Roda `migrate` + `db:seed`
-4. Faz `npm run build`
+Na primeira vez o script aguarda até `http://localhost:8080/up` responder. Depois é só abrir o app.
 
 ### URLs
 
@@ -82,33 +84,37 @@ Na primeira subida o container:
 | Mailpit (ver e-mails) | http://localhost:8025 |
 | MySQL | `localhost:3306` (user `mycompany` / senha `secret`) |
 
-Login demo após o seed: `test@example.com` / `password`
+Login demo: `test@example.com` / `password`
 
 ### Comandos úteis (Docker)
 
 ```bash
-# Logs do app
-docker compose --env-file .env.docker logs -f app
-
-# Shell no container
-docker compose --env-file .env.docker exec app bash
-
-# Artisan
-docker compose --env-file .env.docker exec app php artisan migrate
-docker compose --env-file .env.docker exec app php artisan test --compact
-
-# Rebuild de assets
-docker compose --env-file .env.docker exec app npm run build
-
-# Parar
-docker compose --env-file .env.docker down
+make logs          # logs do app
+make shell         # bash no container
+make test          # testes
+make down          # parar
+make reset         # apaga volumes e sobe do zero
 ```
 
-Equivalentes com Make: `make logs`, `make shell`, `make migrate`, `make test`, `make down`.
+Sem Make:
 
-Configuração Docker: `.env.docker`, `docker-compose.yml`, `docker/`.
+```bash
+docker compose --env-file .env.compose logs -f app
+docker compose --env-file .env.compose down
+```
 
-> E-mails de verificação/redefinição aparecem no **Mailpit** (`http://localhost:8025`), sem precisar de SMTP externo.
+Configuração: `.env.docker` (criado automaticamente a partir de `.env.docker.example`), `docker-compose.yml`, `docker/`.
+
+> E-mails de verificação/redefinição aparecem no **Mailpit** (`http://localhost:8025`), sem SMTP externo.
+
+### Se algo falhar
+
+```bash
+make reset
+# ou:
+docker compose --env-file .env.compose down -v
+bash docker/start.sh
+```
 
 ## Instalação local (Herd / PHP nativo)
 

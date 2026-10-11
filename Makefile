@@ -1,37 +1,47 @@
-.PHONY: up down build restart logs shell artisan migrate seed test npm composer
+.PHONY: up down build restart logs shell artisan migrate seed test npm composer reset
 
-up:
-	docker compose --env-file .env.docker up -d --build
+COMPOSE = docker compose --env-file .env.compose
 
-down:
-	docker compose --env-file .env.docker down
+ensure-env:
+	@if [ ! -f .env.docker ]; then cp .env.docker.example .env.docker; fi
+	@cp -f .env.docker .env.compose
 
-build:
-	docker compose --env-file .env.docker build --no-cache
+up: ensure-env
+	@bash docker/start.sh
 
-restart:
-	docker compose --env-file .env.docker restart
+down: ensure-env
+	$(COMPOSE) down
 
-logs:
-	docker compose --env-file .env.docker logs -f app
+reset: ensure-env
+	$(COMPOSE) down -v
+	@bash docker/start.sh
 
-shell:
-	docker compose --env-file .env.docker exec app bash
+build: ensure-env
+	$(COMPOSE) build --no-cache
 
-artisan:
-	docker compose --env-file .env.docker exec app php artisan $(cmd)
+restart: ensure-env
+	$(COMPOSE) restart
 
-migrate:
-	docker compose --env-file .env.docker exec app php artisan migrate --force
+logs: ensure-env
+	$(COMPOSE) logs -f app
 
-seed:
-	docker compose --env-file .env.docker exec app php artisan db:seed --force
+shell: ensure-env
+	$(COMPOSE) exec app bash
 
-test:
-	docker compose --env-file .env.docker exec app php artisan test --compact
+artisan: ensure-env
+	$(COMPOSE) exec app php artisan $(cmd)
 
-npm:
-	docker compose --env-file .env.docker exec app npm $(cmd)
+migrate: ensure-env
+	$(COMPOSE) exec app php artisan migrate --force
 
-composer:
-	docker compose --env-file .env.docker exec app composer $(cmd)
+seed: ensure-env
+	$(COMPOSE) exec app php artisan db:seed --force
+
+test: ensure-env
+	$(COMPOSE) exec app php artisan test --compact
+
+npm: ensure-env
+	$(COMPOSE) exec app npm $(cmd)
+
+composer: ensure-env
+	$(COMPOSE) exec app composer $(cmd)
