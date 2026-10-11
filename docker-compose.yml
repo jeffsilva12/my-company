@@ -13,8 +13,8 @@ services:
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8080}:80"
-    env_file:
-      - .env.docker
+    # Não usar env_file completo: APP_KEY vazia no Compose sobrescreve o .env do Laravel.
+    # Variáveis de runtime ficam abaixo; o restante vem do .env gerado no entrypoint.
     environment:
       APP_NAME: ${APP_NAME:-My Company}
       APP_ENV: local

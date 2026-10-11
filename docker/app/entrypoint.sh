@@ -55,6 +55,11 @@ set_env_var() {
 }
 
 sync_runtime_env() {
+    # APP_KEY vazio vindo do Compose sobrescreve o .env — remove do ambiente
+    if [ -z "${APP_KEY:-}" ]; then
+        unset APP_KEY || true
+    fi
+
     set_env_var APP_URL "${APP_URL:-http://localhost:8080}"
     set_env_var APP_ENV "${APP_ENV:-local}"
     set_env_var APP_DEBUG "${APP_DEBUG:-true}"
@@ -74,29 +79,46 @@ sync_runtime_env() {
 
 ensure_composer() {
     if [ -f vendor/autoload.php ]; then
+        log "Composer: vendor já instalado."
         return
     fi
 
-    log "Instalando dependências PHP (composer)..."
+    log "Rodando: composer install --no-interaction --prefer-dist --optimize-autoloader"
     composer install --no-interaction --prefer-dist --optimize-autoloader
 }
 
-ensure_npm() {
+ensure_npm_install() {
     if [ -f node_modules/.package-lock.json ] || [ -f node_modules/vite/package.json ]; then
+        log "npm: node_modules já instalado."
         return
     fi
 
-    log "Instalando dependências Node (npm)..."
+    log "Rodando: npm install"
     npm install
 }
 
 ensure_app_key() {
-    if grep -qE '^APP_KEY=base64:.+' .env 2>/dev/null; then
-        return
+    # Nunca deixar APP_KEY vazia no ambiente do processo (PHP-FPM herda isso)
+    if [ -z "${APP_KEY:-}" ]; then
+        unset APP_KEY || true
     fi
 
-    log "Gerando APP_KEY..."
-    php artisan key:generate --force --no-interaction
+    if ! grep -qE '^APP_KEY=base64:.+' .env 2>/dev/null; then
+        log "Rodando: php artisan key:generate --force"
+        php artisan key:generate --force --no-interaction
+    else
+        log "APP_KEY já definida no .env."
+    fi
+
+    local key
+    key="$(grep -E '^APP_KEY=' .env | head -n1 | cut -d= -f2-)"
+    if [ -z "${key}" ]; then
+        log "Falha: APP_KEY continua vazia após key:generate."
+        exit 1
+    fi
+
+    export APP_KEY="${key}"
+    log "APP_KEY exportada para o processo (PHP-FPM/Nginx)."
 }
 
 ensure_permissions() {
@@ -106,23 +128,27 @@ ensure_permissions() {
 }
 
 ensure_database() {
-    log "Executando migrations..."
+    log "Rodando: php artisan migrate --force"
     php artisan migrate --force --no-interaction
 
     if [ "${RUN_SEEDERS:-true}" = "true" ]; then
-        log "Executando seeders..."
+        log "Rodando: php artisan db:seed --force"
         php artisan db:seed --force --no-interaction
     fi
-
-    php artisan storage:link --force --no-interaction || true
 }
 
-ensure_frontend_build() {
+ensure_storage_link() {
+    log "Rodando: php artisan storage:link --force"
+    php artisan storage:link --force --no-interaction
+}
+
+ensure_npm_build() {
     if [ -f public/build/manifest.json ]; then
+        log "npm: assets já gerados (public/build/manifest.json)."
         return
     fi
 
-    log "Gerando assets frontend (npm run build)..."
+    log "Rodando: npm run build"
     npm run build
 }
 
@@ -130,11 +156,12 @@ wait_for_mysql
 ensure_env_file
 sync_runtime_env
 ensure_composer
-ensure_npm
+ensure_npm_install
 ensure_app_key
 ensure_permissions
 ensure_database
-ensure_frontend_build
+ensure_storage_link
+ensure_npm_build
 
 log "Aplicação pronta em ${APP_URL:-http://localhost:8080}"
 log "Login demo: test@example.com / password"
