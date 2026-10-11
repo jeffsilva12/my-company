@@ -98,27 +98,67 @@ ensure_npm_install() {
 }
 
 ensure_app_key() {
-    # Nunca deixar APP_KEY vazia no ambiente do processo (PHP-FPM herda isso)
+    # APP_KEY="" no ambiente esconde o .env. O key:generate, nesse caso, só
+    # substitui o prefixo "APP_KEY=" e cola a chave nova na antiga — o tamanho
+    # deixa de ser 32 bytes e o AES-256-CBC recusa a cifra.
     if [ -z "${APP_KEY:-}" ]; then
         unset APP_KEY || true
     fi
 
-    if ! grep -qE '^APP_KEY=base64:.+' .env 2>/dev/null; then
-        log "Rodando: php artisan key:generate --force"
-        php artisan key:generate --force --no-interaction
-    else
-        log "APP_KEY já definida no .env."
-    fi
-
     local key
-    key="$(grep -E '^APP_KEY=' .env | head -n1 | cut -d= -f2-)"
+    key="$(php <<'PHP'
+<?php
+$file = '.env';
+$contents = is_file($file) ? file_get_contents($file) : '';
+$hasLine = preg_match('/^APP_KEY=(.*)$/m', $contents, $m) === 1;
+$value = $hasLine ? trim($m[1], " \t\"'") : '';
+
+$valid = [];
+if (preg_match_all('/base64:([A-Za-z0-9+\/]+=*)/', $value, $matches)) {
+    foreach ($matches[1] as $part) {
+        $raw = base64_decode($part, true);
+        if ($raw !== false && strlen($raw) === 32) {
+            $valid[] = 'base64:'.$part;
+        }
+    }
+}
+
+$alreadyValid = count($valid) === 1 && $value === $valid[0];
+if ($alreadyValid) {
+    echo $valid[0];
+    exit(0);
+}
+
+// Chaves coladas: a última é a original. key:generate com APP_KEY vazio
+// só troca o prefixo e deixa o valor antigo no fim da linha.
+$key = $valid !== []
+    ? $valid[array_key_last($valid)]
+    : 'base64:'.base64_encode(random_bytes(32));
+$line = 'APP_KEY='.$key;
+
+if ($hasLine) {
+    $updated = preg_replace('/^APP_KEY=.*$/m', $line, $contents, 1);
+} else {
+    $updated = rtrim($contents, "\r\n").PHP_EOL.$line.PHP_EOL;
+}
+
+if ($updated === null || file_put_contents($file, $updated) === false) {
+    fwrite(STDERR, "Falha ao gravar APP_KEY\n");
+    exit(1);
+}
+
+fwrite(STDERR, "APP_KEY reescrita (a linha anterior não tinha 32 bytes).\n");
+echo $key;
+PHP
+)"
+
     if [ -z "${key}" ]; then
-        log "Falha: APP_KEY continua vazia após key:generate."
+        log "Falha: APP_KEY inválida e não foi possível corrigir."
         exit 1
     fi
 
     export APP_KEY="${key}"
-    log "APP_KEY exportada para o processo (PHP-FPM/Nginx)."
+    log "APP_KEY válida (32 bytes) exportada para o processo (PHP-FPM/Nginx)."
 }
 
 ensure_permissions() {

@@ -7,6 +7,8 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -60,5 +62,14 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+
+        // Docker publica 8080->80; URLs absolutas geradas com porta 80 quebram o JS.
+        Vite::createAssetPathsUsing(
+            fn (string $path, ?bool $secure = null): string => '/'.ltrim($path, '/'),
+        );
+
+        if ($root = config('app.url')) {
+            URL::forceRootUrl($root);
+        }
     }
 }
